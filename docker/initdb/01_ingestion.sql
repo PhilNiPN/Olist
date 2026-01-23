@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS ingestion.runs (
 );
 
 -- 2. file manifest: tracks what files are in a snapshot
-CREATE TABLE IF NOT EXISTS ingestion.file_manifests ( 
+CREATE TABLE IF NOT EXISTS ingestion.file_manifest ( 
     snapshot_id TEXT NOT NULL,
     filename TEXT NOT NULL,
     file_hash TEXT,
