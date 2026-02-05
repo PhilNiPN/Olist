@@ -33,6 +33,8 @@ services:
      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
      POSTGRES_DB: ${POSTGRES_DB:-olist_dw}
      POSTGRES_PORT: 5432
+     KAGGLE_USERNAME: ${KAGGLE_USERNAME}
+     KAGGLE_KEY: ${KAGGLE_KEY}
    volumes:
      # mount data to update files without rebuilding the image
      - ./Data:/app/Data
