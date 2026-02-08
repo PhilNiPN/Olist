@@ -1,10 +1,11 @@
 """Bronze layer configuration."""
+
 from pathlib import Path
 
 # Paths
 DATA_DIR = Path("Data")
 RAW_DIR = DATA_DIR / "raw"
-MANIFEST_PATH = DATA_DIR / "manifest.json"
+MANIFEST_DIR = DATA_DIR / "manifest"
 
 # Kaggle dataset
 KAGGLE_DATASET = "olistbr/brazilian-ecommerce"
@@ -21,3 +22,13 @@ FILE_TO_TABLE = {
     "olist_geolocation_dataset.csv": "geolocation",
     "product_category_name_translation.csv": "product_category_name_translation",
 }
+
+def manifest_path(snapshot_id: str) -> Path:
+    """ returns the path for a specific snapshots manifest. """
+    return MANIFEST_DIR / f"{snapshot_id}.json"
+
+def latest_manifest_path() -> Path | None:
+    """ returns the most recent modified manifest file or none. """
+    MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
+    manifests = sorted(MANIFEST_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime)
+    return manifests[-1] if manifests else None

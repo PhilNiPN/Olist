@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--extract-only', action='store_true', help='only extract the data, no loading')
     parser.add_argument('--load_only', action='store_true', help='only load (requires existing manifest)')
     parser.add_argument('--snapshot-id', help='override the snapshot ID for load')
+    parser.add_argument('--force', action='store_true', help='force re-download even if source is unchanged')
     args = parser.parse_args()
 
     if args.load_only:

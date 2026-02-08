@@ -8,7 +8,7 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-from config import RAW_DIR, MANIFEST_PATH, FILE_TO_TABLE
+from config import RAW_DIR, FILE_TO_TABLE, manifest_path, latest_manifest_path
 from db import get_db_connection, load_csv_via_temp_table, LoadResult, health_check
 
 logging.basicConfig(level=logging.INFO)
@@ -44,7 +44,10 @@ def load(snapshot_id: str = None, run_id: str = None) -> LoadSummary:
 
     # if snapshot_id is not provided, then read it from manifest
     if snapshot_id is None: 
-        manifest = json.loads(MANIFEST_PATH.read_text())
+        path = latest_manifest_path()
+        if path is None:
+            raise FileNotFoundError("No manifest found, try extract first.")
+        manifest = json.loads(path.read_text())
         snapshot_id = manifest['snapshot_id']
     
     run_id = run_id or str(uuid.uuid4())
