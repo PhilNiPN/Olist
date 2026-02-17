@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from kaggle.api.kaggle_api_extended import KaggleApi
 
-from config import KAGGLE_DATASET, RAW_BASE, MANIFEST_DIR, FILE_TO_TABLE, manifest_path, latest_manifest_path, raw_dir
+from .config import KAGGLE_DATASET, RAW_BASE, MANIFEST_DIR, FILE_TO_TABLE, manifest_path, latest_manifest_path, raw_dir
 
 logger = logging.getLogger(__name__)
 

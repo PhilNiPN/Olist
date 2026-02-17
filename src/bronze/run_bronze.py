@@ -5,8 +5,8 @@ import argparse
 import logging
 import sys
 from logging_config import setup_logging
-from extract_bronze import extract
-from load_bronze import load
+from .extract_bronze import extract
+from .load_bronze import load
 
 logger = logging.getLogger(__name__)
 

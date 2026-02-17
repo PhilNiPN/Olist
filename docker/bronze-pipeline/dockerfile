@@ -1,7 +1,7 @@
 # use official python image
 FROM python:3.12-slim
 
-# setting theworking directory
+# setting the working directory
 WORKDIR /app
 
 # install dependencies
@@ -15,5 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY Data/ ./Data/
 
+# tells python to also look for modules in the src dir for imports
+ENV PYTHONPATH=/app/src
+
 # command to run the application when the container is started
-CMD ["python", "src/run_bronze.py"]
+CMD ["python", "-m", "src/run_bronze.py"]

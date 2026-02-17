@@ -8,9 +8,9 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-from config import FILE_TO_TABLE, manifest_path, latest_manifest_path, raw_dir
+from .config import FILE_TO_TABLE, manifest_path, latest_manifest_path, raw_dir
 from db import get_db_connection, load_csv_via_temp_table, LoadResult, health_check
-from quality_bronze import run_quality_checks, persist_quality_results
+from .quality_bronze import run_quality_checks, persist_quality_results
 
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ def load(snapshot_id: str = None, run_id: str = None) -> LoadSummary:
         manifest = json.loads(path.read_text())
         snapshot_id = manifest['snapshot_id']
     else: 
-        from config import manifest_path as mp
+        from .config import manifest_path as mp
         mpath = mp(snapshot_id)
         if mpath.exists():
             manifest = json.loads(mpath.read_text())
