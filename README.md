@@ -8,6 +8,18 @@ This project's bronze layer provides raw custody of the olist Kaggle dataset in 
 - Loaded as text to avoid load failures.
 
 ---
+## Table of Contents
+- [Bronze Layer](#bronze-layer)
+1. [Purpose & Scope](#1-purpose--scope)
+2. [Architecture](#2-architecture)
+3. [Tech Stack](#3-tech-stack)
+4. [What's Implemented](#4-whats-implemented)
+5. [Data Contracts](#5-data-contracts-csv--bronze-table-mapping)
+6. [How to Run](#6-how-to-run)
+7. [Decisions and Trade-offs](#7-decisions-and-trade-offs)
+8. [Roadmap](#8-roadmap)
+
+--- 
 
 ## 1) Purpose & scope
 
@@ -31,14 +43,14 @@ What bronze does not do:
 ```mermaid
 flowchart TD;
     A[Kaggle API]-->B[extract ZIP];
-    B-->C[Data/raw/<snapshot_id>/file.csv];
-    B-->D[Data/manifest/<snapshot_id>.json]
+    B-->C[Data/raw/snapshot_id/file_name.csv];
+    B-->D[Data/manifest/snapshot_id.json]
 
     C-->E[Load: temp table COPY + insert]
     D-->E
 
-    E-->F[postgres bronze.*]
-    E-->G[postgres ingestion.*]
+    E-->F[(bronze.*)]
+    E-->G[(ingestion.*)]
     E-->H[quality checks]
     H-->G
 ```
