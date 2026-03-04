@@ -216,11 +216,15 @@ def get_db_connection() -> Generator[extensions.connection, None, None]:
     try:
         yield conn
     # rollback on error - reset connection state before returning to pool
-    except Exception as e:
-        logger.error("transaction_error", extra={"error": str(e)}, exc_info=True)
+    except (OperationalError, InterfaceError) as e:
+        logger.error("connection_error", extra={"error": str(e)}, exc_info=True)
         if conn:
             conn.rollback()
         raise DbConnectionError(str(e)) from e
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
     finally:
         if conn:
             # close connection if it is broken
