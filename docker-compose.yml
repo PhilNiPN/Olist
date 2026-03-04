@@ -39,6 +39,8 @@ services:
      # mount data to update files without rebuilding the image
      - ./Data:/app/Data
      - ./src:/app/src
+     - ./tests:/app/tests
+     - ./pyproject.toml:/app/pyproject.toml
 
 volumes:
   postgres_data:
