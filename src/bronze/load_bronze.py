@@ -58,7 +58,7 @@ def _record_file_manifest(conn, snapshot_id: str, filename: str, file_hash: str,
 def _register_run(conn, run_id: str, snapshot_id: str):
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO ingestion.runs (run_id, snapshot_id, status) VALUES (%s, %s, 'started')",
+            "INSERT INTO ingestion.runs (run_id, snapshot_id, layer, status) VALUES (%s, %s, 'bronze', 'started')",
             (run_id, snapshot_id)
         )
     conn.commit()

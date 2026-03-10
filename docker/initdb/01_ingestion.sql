@@ -6,6 +6,7 @@ CREATE SCHEMA IF NOT EXISTS bronze;
 CREATE TABLE IF NOT EXISTS ingestion.runs (
     run_id UUID PRIMARY KEY,
     snapshot_id TEXT NOT NULL, -- Deterministic identifier for the source data
+    layer TEXT NOT NULL CHECK (layer IN ('bronze', 'silver', 'gold')),
     status TEXT NOT NULL CHECK (status IN ('started', 'success', 'failed')),
     start_time TIMESTAMPTZ DEFAULT NOW(),
     end_time TIMESTAMPTZ,
