@@ -51,16 +51,16 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 
---- Linage: this tracks which bronze snapshot fed each silver table
+--- Lineage: this tracks which bronze snapshot fed each silver table
 
-CREATE TABLE IF NOT EXISTS ingestion.silver_linage (
+CREATE TABLE IF NOT EXISTS ingestion.silver_lineage (
     run_id                UUID NOT NULL REFERENCES ingestion.runs(run_id),
     silver_table          TEXT NOT NULL,
     bronze_table          TEXT NOT NULL,
     effective_snapshot_id TEXT NOT NULL,
     PRIMARY KEY (run_id, silver_table, bronze_table)
 );
-COMMENT ON TABLE ingestion.silver_linage IS 'Maps each silver table load to the bronze snapshot it reads from.';
+COMMENT ON TABLE ingestion.silver_lineage IS 'Maps each silver table load to the bronze snapshot it reads from.';
 
 
 --- Silver tables
