@@ -63,7 +63,7 @@ def resolve_effective_snapshot(conn: extensions.connection, target_snapshot_id: 
     missing = all_bronze_tables - effective.keys()
     if missing:
         raise ValueError(
-            f"No bronze data found for tables: {missing}" 
+            f"No bronze data found for tables: {missing}. " 
             f"Run the bronze pipeline to load the missing data."
         )
     
