@@ -11,7 +11,7 @@ from typing import List
 from .config import FILE_TO_TABLE, manifest_path, latest_manifest_path, raw_dir
 from db import get_db_connection, load_csv_via_temp_table, LoadResult, health_check
 from .quality_bronze import run_quality_checks, persist_quality_results
-
+from notification import PipelineOutcome, notify
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +124,7 @@ def load(snapshot_id: str = None, run_id: str = None) -> LoadSummary:
     run_id = run_id or str(uuid.uuid4())
     results = []
     failed_tables = []
+    all_dq_failures = []
 
     # database health check
     status = health_check()
@@ -161,8 +162,9 @@ def load(snapshot_id: str = None, run_id: str = None) -> LoadSummary:
                 dq_results = run_quality_checks(conn, table_name, snapshot_id, manifest_row_count)
                 persist_quality_results(conn, run_id, dq_results)
                 
-                failed_checks = [r for r in dq_results if not r.passed]
+                failed_checks = [r for r in dq_results if not r.passed and r.severity == 'error']
                 if failed_checks:
+                    all_dq_failures.extend(failed_checks)
                     logger.warning('dq_checks_failed', extra = {
                         'table': table_name,
                         'failed': [r.check_name for r in failed_checks],
@@ -179,8 +181,16 @@ def load(snapshot_id: str = None, run_id: str = None) -> LoadSummary:
                 _complete_file_load(conn, run_id, file_name, 'failed', message = str(e))
                 # continue loading remaining tables
                 
-        run_status = 'failed' if failed_tables else 'success'
-        error_msg = f"failed tables: {failed_tables}" if failed_tables else None
+        if failed_tables: 
+            run_status = 'failed'
+        elif all_dq_failures:
+            run_status = 'success_with_warnings'
+        else:
+            run_status = 'success'
+
+        error_msg = None
+        if failed_tables:
+            error_msg = f"failed tables: {failed_tables}"
         _complete_run(conn, run_id, run_status, error_msg)
 
         if failed_tables:
@@ -189,7 +199,18 @@ def load(snapshot_id: str = None, run_id: str = None) -> LoadSummary:
                 'failed_tables': failed_tables,
                 'succeeded': len(results),
                 'total_tables': len(FILE_TO_TABLE),
-            })    
+            }) 
+
+        notify(PipelineOutcome(
+            run_id = run_id,
+            layer = 'bronze',
+            status = run_status,
+            tables_loaded = len(results),
+            tables_failed = len(failed_tables),
+            dq_failures = [
+                {'table': r.table, 'check': r.check_name, 'details': r.details} for r in all_dq_failures
+            ],
+        ))   
 
     return LoadSummary(
         run_id=run_id,

@@ -13,13 +13,18 @@ logger = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser(description='Silver layer pipeline')
     parser.add_argument('--snapshot-id', help='Target snapshot ID(default: latest)')
+    parser.add_argument('--resume-run-id', help='Resume a previously failed run by its run_id')
     parser.add_argument('--log-level', default='INFO', help='logging level')
     args = parser.parse_args()
 
     setup_logging(level=args.log_level)
 
     try:
-        summary = load(snapshot_id = args.snapshot_id)
+        summary = load(
+            snapshot_id = args.snapshot_id,
+            run_id=args.resume_run_id,
+            resume=bool(args.resume_run_id),
+            )
         logger.info('silver_pipeline_completed', extra = {
             'run_id': summary.run_id,
             'snapshot_id': summary.snapshot_id,

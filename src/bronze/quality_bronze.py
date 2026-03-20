@@ -13,6 +13,7 @@ class QualityResult:
     table: str
     check_name: str
     passed: bool
+    severity: str
     details: dict
 
 
@@ -36,6 +37,7 @@ def check_row_count(conn: extensions.connection, table_name: str, snapshot_id: s
             table = table_name,
             check_name = 'row_count',
             passed = True,
+            severity = 'warning',
             details = {'skipped': True, 'reason': 'no manifest row count'},
         )
 
@@ -51,6 +53,7 @@ def check_row_count(conn: extensions.connection, table_name: str, snapshot_id: s
         table = table_name,
         check_name = 'row_count',
         passed = passed,
+        severity = 'error',
         details = {'expected': expected_rows, 'actual': actual}
     )
 
@@ -76,6 +79,7 @@ def check_not_empty(conn:extensions.connection, table_name: str, snapshot_id: st
         table = table_name,
         check_name = 'not_empty',
         passed = passed, 
+        severity = 'error',
         details = {'row_count': count},
     )
     if not passed: 
@@ -108,6 +112,7 @@ def check_primary_key_nulls(conn: extensions.connection, table_name: str, snapsh
             table = table_name,
             check_name = f"pk_null_{col}",
             passed = passed, 
+            severity = 'error',
             details = {
                 'column': col,
                 'total': total,
@@ -146,6 +151,7 @@ def check_schema(conn: extensions.connection, table_name: str) -> QualityResult:
         table = table_name,
         check_name = 'schema',
         passed = passed,
+        severity = 'error',
         details = {
             'missing_columns': list(missing), 
             'actual_columns': list(actual_cols),
@@ -176,10 +182,12 @@ def persist_quality_results(conn: extensions.connection, run_id: str, results: l
         for res in results:
             cur.execute(
                 """
-                INSERT INTO ingestion.quality_checks (run_id, table_name, check_name, passed, details)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO ingestion.quality_checks (run_id, table_name, check_name, passed, severity, details)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id, table_name, check_name) DO UPDATE
-                SET passed = EXCLUDED.passed, details = EXCLUDED.details, checked_at = NOW()
-                """, (run_id, res.table, res.check_name, res.passed, json.dumps(res.details))
+                SET passed = EXCLUDED.passed, severity = EXCLUDED.severity, 
+                    details = EXCLUDED.details, checked_at = NOW()
+                """, 
+                (run_id, res.table, res.check_name, res.passed, res.severity, json.dumps(res.details)),
             )
     conn.commit()

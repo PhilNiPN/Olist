@@ -166,21 +166,24 @@ Download the repo and in the terminal type:
 ```bash
 docker-compose up -d --build
 ```
-this will start the bronze pipeline automatically. 
+Then run:
+```bash
+docker-compose run --rm pipeline python -m bronze.run_bronze
+```
 
 To shut down the containers:
 ```bash
 docker-compose down
 ```
 
-To remove the data from the docker services and start anew:
+To remove the data from the docker services when you want to start anew:
 ```bash
 docker-compose down -v
 ```
 
 To run a single file manually via the docker service pipeline: 
 ```bash
-docker-compose run --rm pipeline python -m bronze.<full_file_name>
+docker-compose run --rm pipeline python -m bronze.<file_name>
 ```
 
 Where to look if something fails:

@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS ingestion.runs (
     run_id UUID PRIMARY KEY,
     snapshot_id TEXT NOT NULL, -- Deterministic identifier for the source data
     layer TEXT NOT NULL CHECK (layer IN ('bronze', 'silver', 'gold')),
-    status TEXT NOT NULL CHECK (status IN ('started', 'success', 'failed')),
+    status TEXT NOT NULL CHECK (status IN ('started', 'success', 'success_with_warnings', 'failed')),
     start_time TIMESTAMPTZ DEFAULT NOW(),
     end_time TIMESTAMPTZ,
     error_message TEXT
@@ -44,11 +44,22 @@ CREATE TABLE IF NOT EXISTS ingestion.quality_checks (
     table_name TEXT NOT NULL,
     check_name TEXT NOT NULL,
     passed BOOLEAN NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'error',
     details JSONB,
     checked_at TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (run_id, table_name, check_name)
 );
 
+-- 5. Silver table loads: tracks load status of each silver table per run
+CREATE TABLE IF NOT EXISTS ingestion.silver_table_loads (
+    run_id       UUID NOT NULL REFERENCES ingestion.runs(run_id),
+    silver_table TEXT NOT NULL,
+    status       TEXT NOT NULL CHECK (status IN ('pending', 'loaded', 'failed', 'dq_rejected')),
+    rows_inserted BIGINT DEFAULT 0,
+    message      TEXT,
+    updated_at   TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (run_id, silver_table)
+);
 
 -- Comments for 1. runs table:
 COMMENT ON TABLE ingestion.runs IS 'Tracks each execution of the bronze ingestion pipeline.';
@@ -70,3 +81,6 @@ COMMENT ON COLUMN ingestion.file_loads.message IS 'Error details for failed load
 -- Comments for 4. quality_checks table:
 COMMENT ON TABLE ingestion.quality_checks IS 'Bronze layer data quality check results pr. table pr. run.';
 COMMENT ON COLUMN ingestion.quality_checks.details IS ' JSON object with check-specific metrics (counts, rates, column lists).';
+
+-- Comments for 5. silver_table_loads table:
+COMMENT ON TABLE ingestion.silver_table_loads IS 'Tracks load status of each silver table within a pipeline run.';

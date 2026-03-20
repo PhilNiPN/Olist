@@ -245,6 +245,49 @@ def check_cast_nulls(
     return results
 
 
+def check_row_count_vs_bronze( conn: extensions.connection, table_name: str,
+    snapshot_id: str, effective_snapshot_id: str) -> QualityResult:
+    """
+    Check if the row count of the silver table is within a reasonable ratio of the bronze table.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            sql.SQL("SELECT COUNT(*) FROM {} WHERE _snapshot_id = %s").format(
+                sql.Identifier('silver', table_name)
+            ), (snapshot_id,),
+        )
+        silver_count = cur.fetchone()[0]
+
+        cur.execute(
+            sql.SQL("SELECT COUNT(*) FROM {} WHERE _snapshot_id = %s").format(
+                sql.Identifier('bronze', table_name)
+            ), (effective_snapshot_id,),
+        )
+        bronze_count = cur.fetchone()[0]
+
+    if bronze_count == 0:
+        ratio = 0.0
+    else:
+        ratio = silver_count / bronze_count
+
+    # geolocation deduplicates, so allow ratio < 1
+    # for other tables, expect 1:1 ratio
+    threshold = 0.5 if table_name == 'geolocation' else 1.0
+    passed = ratio >= threshold
+
+    return QualityResult(
+        table = table_name,
+        check_name = 'row_count_vs_bronze',
+        passed = passed,
+        severity = 'error',
+        details = {
+            'bronze_rows': bronze_count,
+            'silver_rows': silver_count,
+            'ratio': round(ratio, 4),
+        },
+    )
+
+
 ### cross-table quality checks
 
 def check_referential_integrity(conn: extensions.connection, snapshot_id: str) -> list[QualityResult]:
@@ -368,6 +411,7 @@ def run_quality_checks(conn: extensions.connection, table_name: str,
     results.extend(check_pk_nulls(conn, table_name, snapshot_id))
     results.extend(check_pk_unique(conn, table_name, snapshot_id))
     results.extend(check_cast_nulls(conn, table_name, snapshot_id, effective_snapshot_id))
+    results.append(check_row_count_vs_bronze(conn, table_name, snapshot_id, effective_snapshot_id))
     return results
 
 def run_cross_table_checks(conn: extensions.connection, snapshot_id: str) -> list[QualityResult]:
@@ -381,15 +425,16 @@ def run_cross_table_checks(conn: extensions.connection, snapshot_id: str) -> lis
     return results
 
 def persist_quality_results(conn:extensions.connection, run_id:str, results: list[QualityResult]):
+    # No conn.commit() — load_silver will call and commit the results atomically
     with conn.cursor() as cur:
         for res in results:
             cur.execute(
                 """
-                INSERT INTO ingestion.quality_checks (run_id, table_name, check_name, passed, details)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO ingestion.quality_checks (run_id, table_name, check_name, passed, severity, details)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id, table_name, check_name) DO UPDATE
-                SET passed = EXCLUDED.passed, details = EXCLUDED.details, checked_at = NOW()
+                SET passed = EXCLUDED.passed, severity = EXCLUDED.severity, 
+                    details = EXCLUDED.details, checked_at = NOW()
                 """,
-                (run_id, res.table, res.check_name, res.passed, json.dumps(res.details)),
+                (run_id, res.table, res.check_name, res.passed, res.severity, json.dumps(res.details)),
             )
-    conn.commit()
